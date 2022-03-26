@@ -17,6 +17,9 @@ Improve yourself and study hard
 5. https://juejin.cn/post/6844903767226351623 # 九种跨域方式实现原理
 6. https://juejin.cn/post/7006919355686453279 ast
 7. https://juejin.cn/post/6844903779700047885 重绘和回流
+8. https://juejin.cn/post/6844903650037530638 ipc
+9. https://juejin.cn/post/6866081343454773262 pm2
+10. https://juejin.cn/post/6844904169317335053 ipc
 ## js基础
 1. https://juejin.cn/post/6844904165672484871 作用域 
 2. https://www.bilibili.com/video/BV1wD4y1D7Pp?from=search&seid=2212534765957722610  闭包 作用域
