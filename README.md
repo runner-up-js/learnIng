@@ -55,3 +55,16 @@ Improve yourself and study hard
 1. https://juejin.cn/post/6844904178750324750
 2. https://juejin.cn/post/6844904170789535757 面经
 3. https://juejin.cn/post/6985156199192723487 面试题
+4. https://juejin.cn/post/6866081343454773262 pm2
+
+编译&解释
+-   对于常见编译型语言（例如：Java）来说，编译步骤分为：词法分析->语法分析->语义检查->代码优化和字节码生成。
+
+-   对于解释型语言（例如 JavaScript）来说，通过词法分析 -> 语法分析 -> 语法树，就可以开始解释执行了。
+
+    -   词法分析是将字符流(char stream)转换为记号流(token stream)
+    -   语法分析成 AST (Abstract Syntax Tree)
+    -   预编译，当JavaScript引擎解析脚本时，它会在预编译期对所有声明的变量和函数进行处理！并且是先预声明变量，再预定义函数！
+    -   解释执行，在执行过程中，JavaScript 引擎是严格按着作用域机制（scope）来执行的，并且 JavaScript 的变量和函数作用域是在定义时决定的，而不是执行时决定的。JavaScript 中的变量作用域在函数体内有效，无块作用域；
+https://juejin.cn/post/6959742146781904904 http content-type 文件流
+https://juejin.cn/post/6844903773979033614 手写 apply call bind
