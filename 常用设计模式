@@ -1,0 +1,130 @@
+在前端开发中，常用设计模式主要分为创建型、结构型和行为型三大类，以下是一些核心模式及其应用场景：
+
+一、创建型模式
+单例模式（Singleton）
+核心思想：确保一个类只有一个实例，并提供全局访问点。
+应用场景：全局状态管理（如 Vuex/Pinia）、弹窗组件、日志工具、全局配置对象等。
+代码示例：
+javascript
+class AppState {
+  constructor() {
+    if (AppState.instance) return AppState.instance;
+    this.state = {};
+    AppState.instance = this;
+  }
+  setState(key, value) { this.state[key] = value; }
+  getState(key) { return this.state[key]; }
+}
+const app1 = new AppState();
+const app2 = new AppState();
+console.log(app1 === app2); // true
+工厂模式（Factory）
+核心思想：封装对象的创建逻辑，通过统一接口生成不同实例。
+应用场景：创建复杂对象（如 UI 组件、API 请求实例）、避免代码重复。
+代码示例：
+javascript
+class Button { /* ... */ }
+class Input { /* ... */ }
+class ComponentFactory {
+  static create(type, props) {
+    switch (type) {
+      case 'button': return new Button(props);
+      case 'input': return new Input(props);
+      default: throw new Error('未知组件类型');
+    }
+  }
+}
+const btn = ComponentFactory.create('button', { text: '提交' });
+抽象工厂模式（Abstract Factory）
+核心思想：创建一系列相关或依赖对象的接口，无需指定具体类。
+应用场景：构建相互关联的 UI 组件（如主题切换时的按钮、输入框统一风格）。
+二、结构型模式
+代理模式（Proxy）
+核心思想：为对象提供代用品或占位符，控制对其的访问。
+应用场景：虚拟代理（网络请求优化）、缓存代理（数据缓存）、权限控制。
+代码示例：
+javascript
+// 虚拟代理：延迟加载图片
+const proxyImage = (url) => {
+  let img = new Image();
+  img.src = url;
+  return {
+    setSrc: (newUrl) => { img.src = newUrl; }
+  };
+};
+const imageProxy = proxyImage('loading.gif');
+// 实际需要时再加载真实图片
+imageProxy.setSrc('real-image.jpg');
+装饰器模式（Decorator）
+核心思想：动态为对象添加职责，无需修改原有代码。
+应用场景：添加日志、权限校验、性能监控等横切关注点。
+代码示例：
+javascript
+Function.prototype.before = function(beforeFn) {
+  return (...args) => {
+    beforeFn.apply(this, args);
+    return this.apply(this, args);
+  };
+};
+const logBefore = (fn) => console.log(`调用 ${fn.name}`);
+const decoratedFn = originalFn.before(logBefore);
+外观模式（Facade）
+核心思想：为子系统提供简化接口，降低复杂度。
+应用场景：封装复杂库（如 jQuery 封装原生 DOM 操作）、兼容浏览器差异。
+三、行为型模式
+观察者模式（Observer/Pub-Sub）
+核心思想：定义对象间一对多依赖，状态变化时自动通知观察者。
+应用场景：事件系统（如 addEventListener）、Vue/React 响应式数据、跨组件通信。
+代码示例：
+javascript
+class EventEmitter {
+  constructor() { this.events = {}; }
+  on(event, callback) {
+    if (!this.events[event]) this.events[event] = [];
+    this.events[event].push(callback);
+  }
+  emit(event, ...args) {
+    this.events[event]?.forEach(cb => cb(...args));
+  }
+}
+const emitter = new EventEmitter();
+emitter.on('login', (user) => console.log(`${user.name} 登录`));
+emitter.emit('login', { name: 'Alice' });
+策略模式（Strategy）
+核心思想：封装算法系列，使其可互换。
+应用场景：表单验证、支付方式选择、数据排序策略。
+代码示例：
+javascript
+const strategies = {
+  isEmail: (str) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str),
+  isPhone: (str) => /^1[3-9]\d{9}$/.test(str)
+};
+const validator = (str, type) => strategies[type](str);
+console.log(validator('test@example.com', 'isEmail')); // true
+职责链模式（Chain of Responsibility）
+核心思想：将请求沿处理链传递，直到有对象处理它。
+应用场景：表单验证、中间件处理（如 Express/Koa）、审批流程。
+代码示例：
+javascript
+class Handler {
+  constructor(next) { this.next = next; }
+  handle(request) {
+    if (this.process(request)) return true;
+    return this.next?.handle(request) || false;
+  }
+}
+const handler1 = new Handler((req) => req.type === 'A');
+const handler2 = new Handler((req) => req.type === 'B');
+handler1.next = handler2;
+console.log(handler1.handle({ type: 'B' })); // true
+四、其他实用模式
+迭代器模式（Iterator）：遍历聚合对象（如 Array.prototype.forEach）。
+状态模式（State）：封装对象状态变化逻辑（如复杂表单验证）。
+享元模式（Flyweight）：共享细粒度对象（如图标库优化）。
+模板方法模式（Template Method）：定义算法骨架，延迟子类实现（如封装通用请求流程）。
+五、模式选择建议
+全局管理：优先用单例模式（如状态管理库）。
+对象创建：复杂对象用工厂模式，简单对象直接 new。
+组件通信：父子组件用 Props/Events，跨组件用观察者模式或 Vuex/Redux。
+算法切换：用策略模式替代多重 if-else。
+性能优化：代理模式（虚拟代理、缓存代理）减少重复计算。
