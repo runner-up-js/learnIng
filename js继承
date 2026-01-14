@@ -1,0 +1,176 @@
+在 JavaScript 中，继承主要通过原型链和构造函数模拟实现，以下是 5 种主流继承方式 的详细对比与分析，涵盖 ES6 之前的手动实现及 ES6 的语法糖方案：
+
+1. 原型链继承（共享引用属性）
+实现方式：将父类的实例赋值给子类的原型。
+代码示例：
+
+javascript
+function Parent() {
+  this.colors = ['red', 'blue'];
+}
+Parent.prototype.sayHi = function() {
+  console.log('Hi');
+};
+
+function Child() {}
+Child.prototype = new Parent(); // 关键：子类原型指向父类实例
+Child.prototype.constructor = Child; // 修复 constructor 指向
+
+const c1 = new Child();
+c1.colors.push('green');
+const c2 = new Child();
+console.log(c2.colors); // ['red', 'blue', 'green']（共享引用属性）
+优点：
+
+实现简单，子类可复用父类方法。
+缺点：
+所有子类实例共享父类引用类型属性（如数组、对象），可能导致数据污染。
+无法向父类构造函数传参。
+适用场景：
+
+需要快速实现继承且不涉及引用类型属性共享的场景。
+2. 构造函数继承（私有属性但无原型方法）
+实现方式：在子类构造函数中调用父类构造函数（通过 call 或 apply）。
+代码示例：
+
+javascript
+function Parent(name) {
+  this.name = name;
+  this.colors = ['red', 'blue'];
+}
+
+function Child(name, age) {
+  Parent.call(this, name); // 关键：借用父类构造逻辑
+  this.age = age;
+}
+
+const c1 = new Child('Alice', 25);
+c1.colors.push('green');
+const c2 = new Child('Bob', 30);
+console.log(c2.colors); // ['red', 'blue']（独立副本）
+// c1.sayHi(); // 报错：无法继承原型方法
+优点：
+
+避免引用类型共享，支持向父类传参。
+每个子类实例有独立的属性副本。
+缺点：
+无法继承父类原型上的方法（如 sayHi）。
+适用场景：
+
+需要独立实例属性且不依赖父类原型方法的场景。
+3. 组合继承（功能全但父构造函数调用两次）
+实现方式：结合原型链继承和构造函数继承，既继承实例属性又继承原型方法。
+代码示例：
+
+javascript
+function Parent(name) {
+  this.name = name;
+  this.colors = ['red', 'blue'];
+}
+Parent.prototype.sayHi = function() {
+  console.log('Hi');
+};
+
+function Child(name, age) {
+  Parent.call(this, name); // 第二次调用 Parent（继承实例属性）
+  this.age = age;
+}
+Child.prototype = new Parent(); // 第一次调用 Parent（继承原型方法）
+Child.prototype.constructor = Child;
+
+const c = new Child('Tom', 28);
+c.sayHi(); // 正常输出
+console.log(c instanceof Parent); // true
+优点：
+
+功能完整，支持实例属性独立和原型方法继承。
+支持向父类传参。
+缺点：
+父类构造函数被调用两次（一次设置原型，一次在子类中调用），可能影响性能。
+适用场景：
+
+需要完整继承功能且对性能要求不高的场景。
+4. 寄生组合继承（最优解，ES6 底层实现）
+实现方式：通过 Object.create() 创建父类原型的副本，避免重复调用父类构造函数。
+代码示例：
+
+javascript
+function inheritPrototype(Child, Parent) {
+  const prototype = Object.create(Parent.prototype); // 创建干净原型
+  prototype.constructor = Child; // 修复 constructor
+  Child.prototype = prototype;
+}
+
+function Parent(name) {
+  this.name = name;
+}
+Parent.prototype.sayHi = function() {
+  console.log('Hi');
+};
+
+function Child(name, age) {
+  Parent.call(this, name); // 仅调用一次 Parent
+  this.age = age;
+}
+inheritPrototype(Child, Parent); // 关键：继承原型
+
+const c = new Child('Lisa', 22);
+c.sayHi(); // 正常输出
+console.log(c instanceof Parent); // true
+优点：
+
+高效，仅调用一次父类构造函数。
+完全继承原型方法，避免属性共享。
+缺点：
+实现稍复杂，需手动修复 constructor。
+适用场景：
+
+所有需要高性能继承的场景，是 ES6 class 的底层实现。
+5. ES6 class extends（语法糖，推荐日常使用）
+实现方式：通过 class 和 extends 关键字实现继承，底层基于寄生组合继承。
+代码示例：
+
+javascript
+class Parent {
+  constructor(name) {
+    this.name = name;
+  }
+  sayHi() {
+    console.log('Hi');
+  }
+}
+
+class Child extends Parent {
+  constructor(name, age) {
+    super(name); // 必须调用 super()
+    this.age = age;
+  }
+  sayAge() {
+    console.log(this.age);
+  }
+}
+
+const c = new Child('Alice', 25);
+c.sayHi(); // 正常输出
+c.sayAge(); // 正常输出
+优点：
+
+语法简洁，语义清晰。
+支持 super、静态方法、getter/setter 等特性。
+缺点：
+必须用 new 调用，且子类构造函数中必须先调用 super()。
+适用场景：
+
+所有现代 JavaScript 开发场景，推荐作为默认继承方式。
+总结与推荐
+继承方式	优点	缺点	推荐场景
+原型链继承	实现简单，方法复用	引用类型共享，无法传参	快速实现简单继承
+构造函数继承	属性独立，支持传参	无法继承原型方法	需要独立实例属性的场景
+组合继承	功能完整，支持传参	父构造函数调用两次	需要完整继承功能的场景
+寄生组合继承	高效，避免重复调用	实现稍复杂	高性能继承需求
+ES6 class extends	语法简洁，支持现代特性	需遵循 super() 调用规则	所有现代 JavaScript 开发
+推荐：
+
+日常开发：优先使用 class extends（语法清晰，维护性强）。
+兼容老环境或深入理解原理：掌握寄生组合继承（ES6 的底层实现）。
+避免：原型链继承和构造函数继承的单独使用（存在明显缺陷）。
