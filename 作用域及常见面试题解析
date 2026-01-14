@@ -1,0 +1,155 @@
+JavaScript 作用域及常见面试题解析
+一、作用域的核心概念
+JavaScript 作用域是变量和函数可访问范围的规则集合，其核心作用是解决变量命名冲突问题。作用域分为以下三类：
+
+全局作用域
+在函数外部定义的变量和函数，可在整个脚本或模块中访问。
+浏览器环境中通过 window 对象访问（如 var globalVar = 10; console.log(window.globalVar);）。
+函数作用域
+函数内部定义的变量仅在该函数内有效，外部无法访问。
+示例：
+javascript
+function foo() {
+  var localVar = 20;
+  console.log(localVar); // 20
+}
+foo();
+console.log(localVar); // 报错：localVar is not defined
+块级作用域（ES6 新增）
+通过 let 或 const 定义的变量仅在代码块（如 {}、if、for）内有效。
+示例：
+javascript
+if (true) {
+  let blockVar = 30;
+  console.log(blockVar); // 30
+}
+console.log(blockVar); // 报错：blockVar is not defined
+二、作用域链与变量查找
+作用域链：JavaScript 引擎查找变量的路径，由当前执行上下文的作用域及其所有父级作用域串联而成。
+查找规则：从当前作用域开始，逐级向上搜索，直到全局作用域。若未找到，则报错（如 xxx is not defined）。
+示例：
+javascript
+const outerVar = 'I am outer';
+function outer() {
+  const innerVar = 'I am inner';
+  function inner() {
+    console.log(outerVar); // 访问外部作用域变量
+    console.log(innerVar); // 访问当前作用域变量
+  }
+  inner();
+}
+outer(); // 输出：'I am outer', 'I am inner'
+三、常见面试题解析
+1. 变量提升与函数提升
+题目：以下代码输出什么？
+
+javascript
+console.log(a); // undefined
+var a = 10;
+解析：
+
+var 声明的变量会提升到作用域顶部，但赋值不会。
+代码等价于：
+javascript
+var a;
+console.log(a); // undefined
+a = 10;
+题目：以下代码输出什么？
+
+javascript
+foo(); // 输出：'Hello'
+function foo() {
+  console.log('Hello');
+}
+解析：
+
+函数声明会整体提升到作用域顶部，因此可在声明前调用。
+若使用函数表达式（const foo = function() {...}），则会报错（Cannot access 'foo' before initialization）。
+2. 块级作用域与 var 的陷阱
+题目：以下代码输出什么？
+
+javascript
+for (var i = 0; i < 3; i++) {
+  setTimeout(() => console.log(i), 100); // 输出 3 个 3
+}
+解析：
+
+var 没有块级作用域，i 是全局变量。循环结束后 i 的值为 3，因此输出 3 个 3。
+修复方案：使用 let 创建块级作用域：
+javascript
+for (let i = 0; i < 3; i++) {
+  setTimeout(() => console.log(i), 100); // 输出 0, 1, 2
+}
+3. 闭包与作用域链
+题目：以下代码输出什么？
+
+javascript
+function outer() {
+  const outerVar = 'I am outer';
+  function inner() {
+    console.log(outerVar); // 访问外部作用域变量
+  }
+  return inner;
+}
+const finalResult = outer();
+finalResult(); // 输出：'I am outer'
+解析：
+
+inner 函数通过作用域链访问 outer 函数的变量 outerVar，形成闭包。即使 outer 函数执行完毕，outerVar 仍被保留在内存中。
+题目：以下代码输出什么？
+
+javascript
+function createCounter() {
+  let count = 0;
+  return function() {
+    count++;
+    return count;
+  };
+}
+const counter = createCounter();
+console.log(counter()); // 1
+console.log(counter()); // 2
+解析：
+
+闭包保留了对 count 的引用，每次调用 counter 时，count 的值递增。
+4. 作用域链断裂与 eval
+题目：以下代码输出什么？
+
+javascript
+const x = 10;
+function foo() {
+  const x = 20;
+  eval('console.log(x)'); // 输出：20
+}
+foo();
+解析：
+
+eval 会在当前作用域中执行代码，因此访问的是 foo 函数内的 x（值为 20）。
+注意：eval 和 with 会动态修改作用域链，可能导致性能问题或安全风险，应避免使用。
+5. 动态作用域模拟（不推荐）
+题目：以下代码输出什么？
+
+javascript
+const value = 'global';
+function demo() {
+  console.log(value); // 输出取决于调用方式
+}
+function wrapper() {
+  const value = 'local';
+  demo(); // 词法作用域输出 'global'，动态作用域可能输出 'local'
+}
+wrapper();
+解析：
+
+JavaScript 默认使用词法作用域（静态作用域），因此 demo 函数访问的是全局变量 value。
+动态作用域需通过 eval 或 with 模拟，但会破坏代码可读性，不推荐使用。
+四、优化作用域的实践建议
+避免嵌套过深：减少函数调用层级，缩短作用域链查找路径。
+缓存全局变量：频繁访问的全局变量可赋值给局部变量，提升性能。
+javascript
+function heavyCalculation() {
+  const windowWidth = window.innerWidth; // 缓存全局变量
+  // 使用 windowWidth 而非直接访问 window.innerWidth
+}
+使用 ES6 规范：优先使用 let/const 和模块化，避免 var 的变量提升和作用域泄漏问题。
+合理使用闭包：在需要持久化状态的场景（如事件监听、私有变量）中合理使用闭包，但需注意内存泄漏问题。
