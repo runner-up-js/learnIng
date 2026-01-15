@@ -1,0 +1,71 @@
+ESM（ECMAScript Modules）与 CommonJS（CJS）是 JavaScript 的两种主流模块化规范，它们在语法、加载机制、作用域、输出可变性等方面存在显著差异，适用场景也不同。
+
+一、核心区别
+特性	CommonJS（CJS）	ESM（ECMAScript Modules）
+语法	require() 导入，module.exports 导出	import 导入，export 导出
+加载机制	同步加载（运行时解析依赖）	静态加载（编译时确定依赖，支持异步加载）
+作用域	模块共享全局作用域（可能引发污染）	每个模块独立作用域（严格模式）
+输出可变性	导出值可变（运行时修改）	导出值不可变（绑定引用）
+浏览器支持	需打包工具（如 Webpack）	原生支持（<script type="module">）
+Tree Shaking	不支持（打包时无法移除未使用代码）	支持（静态分析优化代码体积）
+动态导入	不支持（需通过条件加载模拟）	支持 import() 动态导入（返回 Promise）
+默认导出	通过 module.exports 直接赋值	使用 export default
+二、适用场景
+1. 选择 ESM 的场景
+现代化前端项目：浏览器原生支持 ESM，无需打包工具即可直接使用。
+性能优化需求：Tree Shaking 可移除未使用代码，减少打包体积。
+长期维护项目：ESM 是 ECMAScript 官方标准，未来兼容性更好。
+跨平台开发：Node.js 和浏览器统一模块系统（通过 package.json 设置 "type": "module" 或使用 .mjs 扩展名）。
+2. 选择 CommonJS 的场景
+Node.js 服务端开发：CJS 是 Node.js 默认模块系统，适合小型工具或脚本。
+遗留代码维护：现有 CJS 项目迁移成本较高，可暂缓升级。
+快速原型开发：无需严格模块隔离，动态加载更灵活。
+三、兼容性处理
+1. 混合使用 CJS 和 ESM
+CJS 中引入 ESM：通过动态 import() 异步加载，返回 Promise。
+javascript
+async function loadESM() {
+  const esmModule = await import('./esm-module.js');
+  console.log(esmModule.default); // 访问默认导出
+}
+ESM 中引入 CJS：直接导入（需确保 CJS 模块有默认导出或命名导出）。
+javascript
+import cjsModule from './cjs-module.js'; // 默认导入整个模块
+console.log(cjsModule);
+2. 常见问题
+CJS 无法直接解构 ESM 导出：需通过默认导入后访问属性。
+javascript
+// 错误：const { fn } = await import('./esm-module.js');
+// 正确：
+const esmModule = await import('./esm-module.js');
+const { fn } = esmModule;
+ESM 默认导出在 CJS 中的访问：需通过 .default 访问。
+javascript
+const esmModule = await import('./esm-module.js');
+console.log(esmModule.default); // 访问 ESM 的默认导出
+四、迁移建议
+1. 新项目
+优先选择 ESM：利用 Tree Shaking 和浏览器原生支持，提升性能和开发体验。
+配置 package.json：
+json
+{
+  "type": "module", // 启用 ESM
+  "exports": {
+    ".": "./index.js", // 定义主入口
+    "./feature/": "./feature/" // 支持子路径导出
+  }
+}
+2. 旧项目迁移
+分阶段迁移：逐步将 CJS 模块替换为 ESM，避免全量重构风险。
+使用工具：
+Babel 插件：babel-plugin-transform-commonjs 将 CJS 转换为 ESM。
+VSCode 快速修复：悬停 require 语句，点击“快速修复”自动转换。
+Deno Lint：通过 no-sloppy-imports 规则自动补全文件扩展名。
+3. 关键注意事项
+文件扩展名：ESM 要求模块路径包含完整扩展名（如 .js）。
+全局变量：CJS 中的 __dirname 和 __filename 在 ESM 中需替换为：
+javascript
+import { fileURLToPath } from 'node:url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = new URL('.', import.meta.url).pathname;
+严格模式：ESM 默认启用严格模式，可移除代码中的 "use strict"。
