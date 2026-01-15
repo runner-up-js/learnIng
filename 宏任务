@@ -1,0 +1,50 @@
+在浏览器事件循环中，宏任务是异步任务的核心组成部分，其执行机制与微任务紧密配合，共同决定了代码的执行顺序。以下是关于宏任务的详细解析：
+
+一、宏任务的定义与常见类型
+宏任务（Macro Task）是由浏览器或Node.js环境发起的异步任务，通常涉及耗时较长的操作。常见宏任务包括：
+
+定时器：setTimeout、setInterval
+I/O操作：文件读取、网络请求（如fetch、XMLHttpRequest）
+UI渲染：页面回流（Reflow）、重绘（Repaint）
+事件回调：DOM事件（如click、mouseover）、postMessage、MessageChannel
+Node.js特有：setImmediate（仅Node.js环境）
+二、宏任务的执行机制
+任务队列管理
+宏任务被放入宏任务队列（Task Queue），遵循先进先出（FIFO）原则。每次事件循环仅执行一个宏任务，执行完毕后清空当前关联的微任务队列，再检查下一个宏任务。
+与微任务的优先级关系
+执行顺序：同步代码 → 微任务队列 → 宏任务队列。
+每次宏任务执行后，必须清空微任务队列才会处理下一个宏任务。
+嵌套场景：若宏任务中触发新的宏任务（如setTimeout）或微任务（如Promise.then），新任务会分别加入对应队列，但微任务仍优先执行。
+示例分析
+javascript
+console.log('同步代码1');
+setTimeout(() => console.log('宏任务1'), 0);
+Promise.resolve().then(() => console.log('微任务1'));
+console.log('同步代码2');
+输出顺序：
+同步代码1 → 同步代码2 → 微任务1 → 宏任务1
+解析：同步代码先执行，setTimeout加入宏任务队列，Promise.then加入微任务队列。宏任务执行前优先清空微任务队列。
+
+三、宏任务与页面渲染的关系
+渲染时机
+浏览器在每次事件循环中，会在宏任务执行完毕且微任务队列清空后，检查是否需要渲染页面（如DOM变更、样式更新）。渲染本身也是一个宏任务。
+性能影响
+避免阻塞渲染：长时间运行的宏任务（如同步循环）会延迟渲染，导致页面卡顿。
+优化建议：将耗时操作拆分为多个宏任务（如使用requestAnimationFrame或分片处理）。
+四、宏任务与微任务的对比
+特性	宏任务	微任务
+触发源	浏览器/Node.js环境	JavaScript引擎（如Promise）
+常见API	setTimeout、DOM事件、I/O	Promise.then、MutationObserver
+执行时机	每次事件循环执行一个宏任务后	当前宏任务结束后立即执行
+优先级	低	高（优先于下一个宏任务）
+五、面试高频问题解析
+问题：setTimeout(fn, 0)为何不立即执行？
+答案：setTimeout是宏任务，需等待当前同步代码和微任务执行完毕，再由事件循环调度执行。即使延迟设为0，也会被放入宏任务队列排队。
+问题：如何利用宏任务和微任务实现任务调度？
+答案：通过组合setTimeout（宏任务）和Promise.then（微任务），可以控制代码的执行顺序。例如：
+javascript
+setTimeout(() => console.log('宏任务'), 0);
+Promise.resolve().then(() => console.log('微任务'));
+// 输出：微任务 → 宏任务
+问题：宏任务过多会导致什么问题？
+答案：宏任务队列过长会延迟其他任务（如渲染、用户交互）的执行，造成页面卡顿。需通过代码分割、Web Worker或优化异步逻辑减少宏任务堆积。
