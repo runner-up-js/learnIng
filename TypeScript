@@ -1,0 +1,116 @@
+以下是一些适合面试考察的 TypeScript 面试题，涵盖类型系统、高级特性、工程化及实际应用场景：
+
+一、类型系统深入
+如何实现一个类型安全的 Partial<T> 替代品，确保所有属性变为可选且保留原始类型？
+考察点：映射类型、条件类型。
+示例答案：
+typescript
+type MyPartial<T> = { [K in keyof T]?: T[K] };
+如何定义一个类型，表示“非 null 且非 undefined 的类型”？
+考察点：条件类型、Exclude 工具类型。
+示例答案：
+typescript
+type NonNullable<T> = Exclude<T, null | undefined>;
+如何提取函数参数的类型并组合成元组类型？
+考察点：Parameters 工具类型、元组类型。
+示例答案：
+typescript
+type Func = (a: string, b: number) => void;
+type Args = Parameters<Func>; // [string, number]
+二、高级特性应用
+装饰器（Decorators）的执行顺序是怎样的？
+考察点：装饰器组合规则（从下到上、从右到左）。
+示例答案：
+typescript
+function A() { console.log('A'); }
+function B() { console.log('B'); }
+@A @B class C {} // 输出顺序：B → A（类装饰器从右到左）
+如何实现一个只读（Readonly）的类属性，且禁止通过 Object.freeze 或 as const 绕过？
+考察点：readonly 修饰符、类属性设计。
+示例答案：
+typescript
+class Example {
+  private _value: string;
+  constructor(value: string) { this._value = value; }
+  get value(): string { return this._value; } // 只读 getter
+}
+如何利用 keyof 和索引访问类型实现动态属性检查？
+考察点：索引类型查询、类型安全。
+示例答案：
+typescript
+interface User { id: number; name: string; }
+type UserKeys = keyof User; // 'id' | 'name'
+function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key];
+}
+三、工程化与配置
+tsconfig.json 中 strictNullChecks 的作用是什么？启用后需要修改哪些代码？
+考察点：严格类型检查、空值处理。
+示例答案：
+启用后，null 和 undefined 不再属于任何类型，需显式处理（如联合类型 string | null）。
+需检查所有可能为 null 的变量，避免运行时错误。
+如何优化大型项目的 TypeScript 编译性能？
+考察点：工程化实践。
+示例答案：
+使用 project references 分割项目为多个模块。
+启用 incremental 编译和 tsbuildinfo 缓存。
+避免过度使用复杂类型（如递归类型）。
+如何为第三方库添加类型声明（.d.ts 文件）？
+考察点：模块扩充、类型声明文件。
+示例答案：
+typescript
+// custom.d.ts
+declare module 'third-party-lib' {
+  export function legacyApi(): string;
+}
+四、实际应用场景
+如何实现一个类型安全的 Redux reducer？
+考察点：泛型、联合类型、状态管理。
+示例答案：
+typescript
+type Action<T extends string, P = unknown> = { type: T; payload: P };
+type State = { count: number };
+function reducer(state: State, action: Action<'INCREMENT' | 'DECREMENT'>): State {
+  switch (action.type) {
+    case 'INCREMENT': return { ...state, count: state.count + 1 };
+    case 'DECREMENT': return { ...state, count: state.count - 1 };
+    default: return state;
+  }
+}
+如何在 React 中使用 TypeScript 定义组件的 props 和 state？
+考察点：React 集成、接口定义。
+示例答案：
+typescript
+interface Props { title: string; onSubmit: (data: FormData) => void; }
+interface State { isLoading: boolean; }
+class MyComponent extends React.Component<Props, State> {
+  state = { isLoading: false };
+  render() { return <div>{this.props.title}</div>; }
+}
+如何处理异步操作中的类型安全（如 Promise.all 的返回值类型）？
+考察点：异步类型推断、工具类型。
+示例答案：
+typescript
+const promises = [Promise.resolve(1), Promise.resolve('hello')];
+const results = await Promise.all(promises); // (number | string)[]
+// 更安全的做法：定义元组类型
+type Tuple = [number, string];
+const safeResults = await Promise.all<Tuple[0], Tuple[1]>([
+  Promise.resolve(1),
+  Promise.resolve('hello'),
+]) as Tuple; // [number, string]
+五、开放性问题
+TypeScript 的类型系统是否存在局限性？如何权衡类型安全与开发效率？
+考察点：对类型系统的深度理解、工程思维。
+示例答案：
+局限性：递归类型限制、运行时类型检查缺失、复杂类型推断性能问题。
+权衡：核心业务逻辑严格类型化，非关键路径适当放宽（如使用 any 或类型断言）。
+如何设计一个可扩展的 API 响应类型系统，支持分页、错误处理等场景？
+考察点：泛型、联合类型、模式设计。
+示例答案：
+typescript
+type ApiResponse<T> =
+  | { success: true; data: T }
+  | { success: false; error: { code: number; message: string } };
+type PaginatedData<T> = { items: T[]; total: number };
+type GetUsersResponse = ApiResponse<PaginatedData<User>>;
