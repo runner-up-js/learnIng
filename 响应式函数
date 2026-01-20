@@ -1,0 +1,168 @@
+以下是 readonly()、shallowReactive() 和 shallowReadonly() 的具体使用示例，涵盖不同场景和注意事项：
+
+1. readonly() 使用示例
+场景：保护全局配置或 API 返回的数据，防止意外修改。
+
+示例 1：基本用法
+javascript
+import { reactive, readonly } from 'vue';
+
+// 原始响应式对象
+const config = reactive({
+  apiUrl: 'https://api.example.com',
+  timeout: 5000
+});
+
+// 创建只读代理
+const readOnlyConfig = readonly(config);
+
+// 尝试修改（控制台会警告，但不会生效）
+readOnlyConfig.apiUrl = 'https://new-api.com'; // ❌ 失败，触发警告
+readOnlyConfig.timeout = 10000; // ❌ 失败，触发警告
+
+// 原始对象仍可修改（但通常不推荐这样设计）
+config.apiUrl = 'https://modified.com'; // ✅ 成功（但破坏了只读意图）
+示例 2：直接创建只读对象
+javascript
+import { readonly } from 'vue';
+
+// 直接创建只读对象（无原始响应式对象）
+const staticConfig = readonly({
+  appName: 'My App',
+  version: '1.0.0'
+});
+
+// 任何修改都会触发警告
+staticConfig.version = '2.0.0'; // ❌ 失败，控制台警告
+示例 3：与组件结合（保护 Props）
+javascript
+// 父组件
+const parentConfig = readonly({ theme: 'dark' });
+<ChildComponent :config="parentConfig" />
+
+// 子组件
+const ChildComponent = {
+  props: ['config'],
+  setup(props) {
+    // 尝试修改 props.config（会触发警告）
+    props.config.theme = 'light'; // ❌ 禁止修改 props
+  }
+};
+2. shallowReactive() 使用示例
+场景：优化大对象性能，或明确不需要嵌套响应式的场景。
+
+示例 1：大对象性能优化
+javascript
+import { shallowReactive } from 'vue';
+
+// 大对象（如地图数据）
+const mapData = shallowReactive({
+  coordinates: [
+    { lat: 39.9, lng: 116.4 }, // 非响应式
+    { lat: 31.2, lng: 121.5 }  // 非响应式
+  ],
+  zoomLevel: 10 // 响应式
+});
+
+// 修改第一层属性会触发更新
+mapData.zoomLevel = 12; // ✅ 页面更新
+
+// 修改嵌套对象不会触发更新（需手动处理）
+mapData.coordinates[0].lat = 40.0; // ❌ 无响应，需额外逻辑同步
+示例 2：与第三方库集成
+javascript
+import { shallowReactive } from 'vue';
+import { Chart } from 'some-chart-library';
+
+const chartData = shallowReactive({
+  series: [{ data: [1, 2, 3] }], // 非响应式（图表库内部处理）
+  title: 'Sales Trend' // 响应式（可能用于动态标题）
+});
+
+// 初始化图表
+const chart = new Chart({
+  container: '#chart',
+  data: chartData.series[0].data // 直接传递原始数组
+});
+
+// 修改标题会触发 Vue 更新（但图表需手动重绘）
+chartData.title = 'Updated Trend'; // ✅ Vue 更新，图表需调用 chart.update()
+示例 3：避免不必要的响应式开销
+javascript
+import { shallowReactive } from 'vue';
+
+// 频繁更新的简单对象
+const cache = shallowReactive({
+  lastSearch: '',
+  timestamp: Date.now() // 响应式
+});
+
+// 修改 timestamp 会触发更新
+cache.timestamp = Date.now(); // ✅ 高效更新
+
+// 修改 lastSearch 不会触发嵌套响应（若 lastSearch 是对象则需注意）
+cache.lastSearch = 'vue3'; // ✅ 若 lastSearch 是字符串，无嵌套问题
+3. shallowReadonly() 使用示例
+场景：共享静态配置或第三方库返回的数据，禁止修改但保留浅层响应性。
+
+示例 1：保护静态配置
+javascript
+import { shallowReadonly } from 'vue';
+
+const appConfig = shallowReadonly({
+  apiBaseUrl: '/api/v1',
+  features: { darkMode: true, newDashboard: false } // 非响应式
+});
+
+// 修改第一层属性会触发警告
+appConfig.apiBaseUrl = '/api/v2'; // ❌ 失败，控制台警告
+
+// 修改嵌套对象不会触发警告（但实际修改生效，无响应性）
+appConfig.features.darkMode = false; // ⚠️ 无警告，但无响应式更新
+示例 2：与 ref 结合使用
+javascript
+import { ref, shallowReadonly } from 'vue';
+
+const externalData = ref({
+  userCount: 1000,
+  settings: { theme: 'light' } // 非响应式
+});
+
+// 创建只读浅层代理
+const readOnlyData = shallowReadonly(externalData.value);
+
+// 修改外部数据（需通过 .value）
+externalData.value.userCount = 2000; // ✅ 原始 ref 可修改
+
+// 尝试修改只读代理（失败）
+readOnlyData.userCount = 3000; // ❌ 失败，控制台警告
+示例 3：避免深层冻结的开销
+javascript
+import { shallowReadonly } from 'vue';
+
+// 大对象（如游戏地图配置）
+const gameMap = shallowReadonly({
+  tiles: Array(1000).fill({ type: 'grass' }), // 非响应式
+  size: { width: 100, height: 100 } // 非响应式
+});
+
+// 禁止修改任何属性（浅层）
+gameMap.size.width = 200; // ⚠️ 无警告，但实际修改生效（需额外防护）
+
+// 更安全的做法：结合 Object.freeze 深层冻结嵌套对象
+const fullyProtectedMap = {
+  tiles: Object.freeze(Array(1000).fill({ type: 'grass' })),
+  size: Object.freeze({ width: 100, height: 100 })
+};
+const readOnlyMap = shallowReadonly(fullyProtectedMap); // 双重保护
+关键注意事项
+readonly vs shallowReadonly：
+readonly 会递归保护所有嵌套属性，而 shallowReadonly 仅保护第一层。
+修改 shallowReadonly 的嵌套属性不会触发警告，但可能破坏数据一致性。
+性能与安全性权衡：
+shallowReactive/shallowReadonly 适合大对象或明确不需要嵌套响应的场景。
+若需完全禁止修改，建议结合 Object.freeze() 深层冻结嵌套对象。
+与 ref 的区别：
+ref 会自动解包对象为 reactive，而 shallowReactive/shallowReadonly 不会。
+修改 ref 的 .value 会触发更新，而修改 shallowReadonly 的嵌套属性不会。
+通过合理选择这些 API，可以更精细地控制响应式行为，平衡开发便利性与性能需求。
