@@ -1,0 +1,39 @@
+            const _completeDeepClone = (target, map = new Map()) => {
+                // 补全代码
+                if(typeof target !=='object' && target!=null) return target
+                const newObj = new target.constructor()
+
+                if(map.has(target)) {
+                    return map.get(target)
+                }else {
+                    map.set(target,newObj)
+                }
+                switch(target.constructor.name) {
+                    case 'Set':
+                        target.forEach((item)=>{
+                            newObj.add(_completeDeepClone(item,map))
+                        })
+                     case 'map':
+                        target.forEach((item,key)=>{
+                            newObj.set(key,_completeDeepClone(item,map))
+                        })
+                    case 'Symbol':
+                    return Symbol(targe.description)
+                    case 'Function':
+                    return new Function('return' + target.toString())
+                    case 'RegExp':
+                    return new RegExp(target)
+                    case 'Boolean':
+                    case 'Error':
+                    case 'Date':
+                    case 'String':
+                    case 'Number':
+                        return new target.constructor(target)
+                }
+
+               for(let i in target) {
+                  newObj[i] =_completeDeepClone(target[i],map)
+               }
+
+               return newObj
+            }
