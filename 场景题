@@ -1,0 +1,127 @@
+JavaScript 笔试题中的场景题通常考察实际开发中的问题解决能力，以下整理高频场景及解题思路，附代码示例：
+
+1. 事件冒泡与捕获
+场景：点击子元素时，父元素的事件也被触发，如何控制执行顺序？
+解答：
+
+冒泡：事件从内向外传播（默认），可用 e.stopPropagation() 阻止
+捕获：事件从外向内传播，通过 {capture: true} 配置
+javascript
+parent.addEventListener('click', handleParent, true); // 捕获阶段执行
+child.addEventListener('click', handleChild); // 冒泡阶段执行
+2. 防抖与节流
+场景：搜索框输入、窗口缩放时减少频繁触发
+防抖：延迟执行，最后一次操作后等待固定时间
+
+javascript
+function debounce(fn, delay) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+节流：固定时间间隔内只执行一次
+
+javascript
+function throttle(fn, interval) {
+  let lastTime;
+  return (...args) => {
+    const now = Date.now();
+    if (!lastTime || now - lastTime >= interval) {
+      fn.apply(this, args);
+      lastTime = now;
+    }
+  };
+}
+3. 异步处理
+场景：多个异步请求顺序执行
+Promise 链式调用：
+
+javascript
+fetch(url1)
+  .then(res => fetch(url2))
+  .then(res => fetch(url3))
+  .then(console.log);
+async/await：
+
+javascript
+async function sequentialFetch() {
+  const res1 = await fetch(url1);
+  const res2 = await fetch(url2);
+  const res3 = await fetch(url3);
+  console.log(res3);
+}
+4. 深拷贝
+场景：复杂对象/数组的完全复制
+
+javascript
+function deepClone(obj) {
+  if (obj === null || typeof obj !== 'object') return obj;
+  const clone = Array.isArray(obj) ? [] : {};
+  for (let key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      clone[key] = deepClone(obj[key]);
+    }
+  }
+  return clone;
+}
+5. 数组去重
+场景：去除重复元素
+
+javascript
+// ES6 Set
+const unique = [...new Set(array)];
+
+// 对象属性统计
+const countMap = {};
+array.filter(item => !(countMap[item] = item in countMap));
+6. 跨域解决方案
+场景：前端调用不同域的 API
+
+CORS：后端设置 Access-Control-Allow-Origin
+JSONP：利用 <script> 标签不受同源限制
+代理：通过同源服务器转发请求
+7. 内存泄漏检测
+场景：页面性能优化
+
+避免全局变量
+及时清理定时器/事件监听
+避免闭包中引用大对象
+使用 WeakMap 减少内存占用
+8. 继承实现
+场景：类继承的最佳实践
+
+javascript
+class Parent {
+  constructor(name) { this.name = name; }
+}
+
+class Child extends Parent {
+  constructor(name, age) {
+    super(name);
+    this.age = age;
+  }
+}
+9. 循环性能优化
+场景：避免重排/重绘
+
+使用 DocumentFragment 批量操作 DOM
+避免 for...in 遍历数组
+使用 requestAnimationFrame 替代 setInterval 动画
+10. 模块化
+场景：代码组织与复用
+
+ES6 Modules：import/export
+动态加载：import() 函数
+综合场景示例：实现一个可复用的轮播组件
+要求：
+
+支持自动播放与手动切换
+响应式布局
+触摸事件支持
+关键点：
+使用 setInterval 实现自动播放，切换时清除定时器
+监听 resize 事件调整布局
+添加 touchstart/touchmove/touchend 事件实现滑动切换
+这些场景题涵盖了 JavaScript 开发中的核心问题，掌握它们能显著提升实际开发中的问题解决能力。
