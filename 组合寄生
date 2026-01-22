@@ -1,0 +1,22 @@
+function Human(name) {
+                this.name = name
+                this.kingdom = 'animal'
+                this.color = ['yellow', 'white', 'brown', 'black']
+            }
+            Human.prototype.getName = function(){
+                return this.name
+            }
+            function Chinese(name,age) {
+                Human.call(this,name)
+                this.color = 'yellow'
+                this.age = age
+            }
+            function inherit(human,child) {
+                const fn =Object.create(Human.prototype)
+                fn.constructor = child
+                child.prototype = fn
+            }
+            inherit(Human,Chinese)
+            Chinese.prototype.getAge = function(){
+                return this.age
+            }
