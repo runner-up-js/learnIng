@@ -1,0 +1,62 @@
+在JavaScript中，原型链是实现继承的核心机制，而Object与Function的关系是理解原型链的关键节点。以下从原型链结构、核心关系推导、代码验证三个维度详细解析：
+
+1. 原型链基础结构
+每个对象都有__proto__属性：指向其构造函数的prototype属性（创建该对象的函数）。
+构造函数本身也是对象：如Function、Object都是函数对象，因此它们也有__proto__。
+原型链顶端是Object.prototype：其__proto__为null，终止原型链。
+2. Object与Function的核心关系
+（1）Function的特殊性
+Function是所有函数的构造函数：包括它自己。
+javascript
+Function instanceof Function; // true（因为Function是Function的实例）
+Function的prototype是函数原型对象：所有函数（包括Function自身）的__proto__指向它。
+（2）Object的双重角色
+作为构造函数：new Object()创建普通对象。
+作为函数对象：Object本身是Function的实例。
+javascript
+Object instanceof Function; // true
+（3）关键原型指向关系
+对象/函数	__proto__指向	prototype属性
+Function	Function.prototype	Function.prototype
+Object	Function.prototype	Object.prototype
+Function.prototype	Object.prototype	无（原型对象无prototype）
+Object.prototype	null	无
+3. 代码验证原型关系
+javascript
+// 1. Function的__proto__指向自身原型
+console.log(Function.__proto__ === Function.prototype); // true
+
+// 2. Object的__proto__指向Function.prototype
+console.log(Object.__proto__ === Function.prototype); // true
+
+// 3. Function.prototype的__proto__指向Object.prototype
+console.log(Function.prototype.__proto__ === Object.prototype); // true
+
+// 4. Object.prototype的__proto__为null
+console.log(Object.prototype.__proto__ === null); // true
+
+// 5. 所有普通对象继承自Object.prototype
+const obj = {};
+console.log(obj.__proto__ === Object.prototype); // true
+console.log(obj.__proto__.__proto__ === null); // true（原型链终止）
+
+// 6. 函数对象继承自Function.prototype
+const fn = function() {};
+console.log(fn.__proto__ === Function.prototype); // true
+console.log(fn.prototype.__proto__ === Object.prototype); // true（函数实例的原型继承自Object）
+4. 原型链访问逻辑
+当访问对象属性时，引擎沿原型链逐级查找：
+
+javascript
+const obj = { a: 1 };
+obj.hasOwnProperty; // 访问过程：
+// 1. obj本身无hasOwnProperty → 查找obj.__proto__（即Object.prototype）
+// 2. Object.prototype.hasOwnProperty存在 → 返回该属性
+5. 总结关系图
+null ← Object.prototype ← Function.prototype ← Function.__proto__
+                ↑              ↑
+                |              |
+所有对象（如{}） ← Object      所有函数（如fn） ← Function
+Function和Object互为实例：Function是Object的实例（Function instanceof Object），Object是Function的实例（Object instanceof Function）。
+原型链闭环：Function.prototype继承自Object.prototype，而Object作为函数又继承自Function.prototype，形成逻辑闭环，但最终通过Object.prototype.__proto__ = null终止。
+理解这一关系后，可深入掌握JavaScript的继承机制、instanceof操作符原理及原型链污染等高级话题。
